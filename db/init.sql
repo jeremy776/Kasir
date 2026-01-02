@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `tb_nota` (
 -- Password: admin (di-hash dengan password_hash)
 -- ============================================
 INSERT INTO `login` (`nama_toko`, `username`, `password`, `alamat`, `telepon`) VALUES
-('Toko Saya', 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jl. Contoh Alamat No. 123', '081234567890')
+('Toko Saya', 'admin', '$2y$10$NpUNBLdPeUyqwJeGqkQFoOv/fzgrJlQj0OfmKfE1PxuouT5vkZFS2', 'Jl. Contoh Alamat No. 123', '081234567890')
 ON DUPLICATE KEY UPDATE `username` = `username`;
 
 -- ============================================
