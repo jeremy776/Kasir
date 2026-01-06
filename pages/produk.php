@@ -74,7 +74,7 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                             + Tambah Produk
                         </button>
                     </div>
-                    
+
                     <!-- Desktop Table -->
                     <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 ">
@@ -114,10 +114,10 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Mobile Card List -->
                     <div class="md:hidden divide-y divide-gray-200">
-                        <?php 
+                        <?php
                         mysqli_data_seek($list_produk, 0);
                         $mobileNo = 1;
                         while ($produk = mysqli_fetch_assoc($list_produk)) : ?>
@@ -156,21 +156,21 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                     <div class="p-3 sm:p-0 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <h4 class="px-2 sm:px-5 py-2 text-xs sm:text-sm text-gray-500">Page <?php echo $page; ?> of <?php echo $total_pages ?: 1; ?> (<?php echo $total_produk; ?> data)</h4>
                         <div class="px-2 sm:px-5 py-2 flex flex-wrap items-center gap-1">
-                            <?php 
+                            <?php
                             $search_param = !empty($search) ? '&search=' . urlencode($search) : '';
                             if ($page > 1) : ?>
                                 <a href="produk.php?page=<?php echo $page - 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">«</a>
                             <?php endif; ?>
-                            
-                            <?php 
+
+                            <?php
                             $start_page = max(1, $page - 2);
                             $end_page = min($total_pages, $page + 2);
-                            
+
                             if ($start_page > 1) : ?>
                                 <a href="produk.php?page=1<?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">1</a>
                                 <?php if ($start_page > 2) : ?><span class="px-2 text-gray-500">...</span><?php endif; ?>
                             <?php endif; ?>
-                            
+
                             <?php for ($i = $start_page; $i <= $end_page; $i++) : ?>
                                 <?php if ($i === $page) : ?>
                                     <span class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg"><?php echo $i; ?></span>
@@ -178,12 +178,12 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                                     <a href="produk.php?page=<?php echo $i; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"><?php echo $i; ?></a>
                                 <?php endif; ?>
                             <?php endfor; ?>
-                            
+
                             <?php if ($end_page < $total_pages) : ?>
                                 <?php if ($end_page < $total_pages - 1) : ?><span class="px-2 text-gray-500">...</span><?php endif; ?>
                                 <a href="produk.php?page=<?php echo $total_pages; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"><?php echo $total_pages; ?></a>
                             <?php endif; ?>
-                            
+
                             <?php if ($page < $total_pages) : ?>
                                 <a href="produk.php?page=<?php echo $page + 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">»</a>
                             <?php endif; ?>
@@ -201,10 +201,23 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
     function hapus(btn) {
         const idproduk = btn.id;
 
-        // konfirmasi hapus
-        if (!confirm('Yakin ingin menghapus Produk ini?')) {
-            return;
-        }
+        Swal.fire({
+            title: 'Yakin ingin menghapus Produk ini?',
+            text: "Data yang dihapus tidak dapat dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                proceedHapus(idproduk);
+            }
+        });
+    }
+
+    function proceedHapus(idproduk) {
         fetch('produk.php?q=hapus', {
                 method: 'POST',
                 headers: {
@@ -216,15 +229,35 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
             }).then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    alert('Produk berhasil dihapus');
-                    // reload page
-                    location.reload();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Produk berhasil dihapus',
+                        confirmButtonColor: '#2563eb',
+                    }).then(() => {
+                        location.reload();
+                    });
+
                 } else {
-                    alert('Gagal menghapus produk: ' + data.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Gagal menghapus produk: ' + data.message,
+                        confirmButtonColor: '#dc2626'
+                    }).then(() => {
+                        location.reload();
+                    });
                 }
             }).catch(error => {
                 console.error('Error:', error);
-                alert('Terjadi kesalahan saat menghapus produk');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan saat menghapus produk',
+                    confirmButtonColor: '#dc2626'
+                }).then(() => {
+                    location.reload();
+                });
             });
     }
 
@@ -245,35 +278,57 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
         const harga_jual = document.getElementById('harga_jual').value;
 
         if (!nama_produk || !idkategori || !harga_jual) {
-            alert('Mohon lengkapi data produk!');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Tidak Lengkap',
+                text: 'Mohon lengkapi semua data produk!',
+                confirmButtonColor: '#f59e0b'
+            });
             return;
         }
 
         fetch('produk.php?q=tambah', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                kode_produk,
-                nama_produk,
-                idkategori,
-                stock: stock || 0,
-                harga_modal: harga_modal || 0,
-                harga_jual
-            })
-        }).then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert('Produk berhasil ditambahkan');
-                location.reload();
-            } else {
-                alert('Gagal menambah produk: ' + data.message);
-            }
-        }).catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat menambah produk');
-        });
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    kode_produk,
+                    nama_produk,
+                    idkategori,
+                    stock: stock || 0,
+                    harga_modal: harga_modal || 0,
+                    harga_jual
+                })
+            }).then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Produk berhasil ditambahkan',
+                        confirmButtonColor: '#2563eb',
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Gagal menambah produk: ' + data.message,
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan saat menambah produk',
+                    confirmButtonColor: '#dc2626'
+                });
+            });
     }
 
     // Edit functions
@@ -302,36 +357,58 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
         const harga_jual = document.getElementById('edit_harga_jual').value;
 
         if (!nama_produk || !idkategori || !harga_jual) {
-            alert('Mohon lengkapi data produk!');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Data Tidak Lengkap',
+                text: 'Mohon lengkapi semua data produk!',
+                confirmButtonColor: '#f59e0b'
+            });
             return;
         }
 
         fetch('produk.php?q=edit', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                idproduk,
-                kode_produk,
-                nama_produk,
-                idkategori,
-                stock: stock || 0,
-                harga_modal: harga_modal || 0,
-                harga_jual
-            })
-        }).then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert('Produk berhasil diupdate');
-                location.reload();
-            } else {
-                alert('Gagal update produk: ' + data.message);
-            }
-        }).catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat update produk');
-        });
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    idproduk,
+                    kode_produk,
+                    nama_produk,
+                    idkategori,
+                    stock: stock || 0,
+                    harga_modal: harga_modal || 0,
+                    harga_jual
+                })
+            }).then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Produk berhasil diupdate',
+                        confirmButtonColor: '#2563eb',
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Gagal update produk: ' + data.message,
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan saat update produk',
+                    confirmButtonColor: '#dc2626'
+                });
+            });
     }
 </script>
 
@@ -339,7 +416,7 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
 <div id="modalTambahProduk" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeModal()"></div>
-        
+
         <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Tambah Produk Baru</h3>
@@ -349,18 +426,18 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                     </svg>
                 </button>
             </div>
-            
+
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kode Produk</label>
                     <input type="text" id="kode_produk" value="<?php echo $kode_produk_baru; ?>" readonly class="py-2 px-3 block w-full border border-gray-300 bg-gray-100 rounded-lg text-sm focus:outline-none">
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Produk <span class="text-red-500">*</span></label>
                     <input type="text" id="nama_produk" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan nama produk">
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
                     <select id="idkategori" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none">
@@ -370,12 +447,12 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                         <?php endwhile; ?>
                     </select>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Stok</label>
                     <input type="number" id="stock" value="0" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none" placeholder="0">
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Harga Modal</label>
@@ -387,7 +464,7 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-6 flex justify-end gap-3">
                 <button onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
                     Batal
@@ -404,7 +481,7 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
 <div id="modalEditProduk" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeEditModal()"></div>
-        
+
         <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Edit Produk</h3>
@@ -414,25 +491,25 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                     </svg>
                 </button>
             </div>
-            
+
             <div class="space-y-4">
                 <input type="hidden" id="edit_idproduk">
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kode Produk</label>
                     <input type="text" id="edit_kode_produk" readonly class="py-2 px-3 block w-full border border-gray-300 bg-gray-100 rounded-lg text-sm focus:outline-none">
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Produk <span class="text-red-500">*</span></label>
                     <input type="text" id="edit_nama_produk" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan nama produk">
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
                     <select id="edit_idkategori" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none">
                         <option value="">-- Pilih Kategori --</option>
-                        <?php 
+                        <?php
                         // Reset pointer kategori untuk edit modal
                         $list_kategori_edit = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kategori ASC");
                         while ($kat_edit = mysqli_fetch_assoc($list_kategori_edit)) : ?>
@@ -440,12 +517,12 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                         <?php endwhile; ?>
                     </select>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Stok</label>
                     <input type="number" id="edit_stock" class="py-2 px-3 block w-full border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none" placeholder="0">
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Harga Modal</label>
@@ -457,7 +534,7 @@ $list_kategori = mysqli_query($conn, "SELECT * FROM kategori ORDER BY nama_kateg
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-6 flex justify-end gap-3">
                 <button onclick="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">
                     Batal

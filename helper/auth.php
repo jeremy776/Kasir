@@ -1,16 +1,18 @@
 <?php
-function guestOnly() {
+function guestOnly()
+{
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (!(!isset($_SESSION['login']) || $_SESSION['login'] !== true)) {
-        header("Location: ../index.php");
+        header("Location: index.php");
         exit;
     }
 }
 
-function getUserLogin() {
+function getUserLogin()
+{
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -27,13 +29,14 @@ function getUserLogin() {
     return null;
 }
 
-function userOnly() {
+function userOnly()
+{
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
 
     if (!(isset($_SESSION['login']) && $_SESSION['login'] === true)) {
-        header("Location: ../login.php");
+        header("Location: login.php");
         exit;
     }
 }

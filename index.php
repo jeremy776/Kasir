@@ -15,8 +15,8 @@ if (isset($_GET['q']) && $_GET['q'] === 'save_transaction') {
         exit;
     }
 
-    $list_keranjang = mysqli_query($conn, "SELECT idproduk, quantity FROM keranjang");
-    if (mysqli_num_rows($list_keranjang) === 0) {
+    $cart_items = $_SESSION['cart'] ?? [];
+    if (empty($cart_items)) {
         echo json_encode([
             'status' => 'error',
             'message' => 'Keranjang kosong'
@@ -24,13 +24,15 @@ if (isset($_GET['q']) && $_GET['q'] === 'save_transaction') {
         exit;
     }
 
-    // masukin semua data keranjang ke tabel 'tb_nota' dengan format no_nota, idproduk, quantity
+    // Simpan ke tb_nota dan kurangi stock
     $no_nota = $data['no_nota'] ?? '';
-    while ($item = mysqli_fetch_assoc($list_keranjang)) {
+    foreach ($cart_items as $item) {
         $idproduk = (int)$item['idproduk'];
         $qty      = (int)$item['quantity'];
+        $harga_jual = (float)$item['harga_jual'];
 
-        $insert = mysqli_query($conn, "INSERT INTO tb_nota (no_nota, idproduk, quantity) VALUES ('$no_nota', '$idproduk', '$qty')");
+        // Insert ke tb_nota dengan harga saat transaksi
+        $insert = mysqli_query($conn, "INSERT INTO tb_nota (no_nota, idproduk, quantity, harga_jual) VALUES ('$no_nota', '$idproduk', '$qty', '$harga_jual')");
         if (!$insert) {
             echo json_encode([
                 'status' => 'error',
@@ -38,16 +40,20 @@ if (isset($_GET['q']) && $_GET['q'] === 'save_transaction') {
             ]);
             exit;
         }
+
+        // Kurangi stock
+        $update_stock = mysqli_query($conn, "UPDATE produk SET stock = stock - $qty WHERE idproduk = '$idproduk'");
+        if (!$update_stock) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Gagal update stock: ' . mysqli_error($conn)
+            ]);
+            exit;
+        }
     }
-    // kosongin keranjang
-    $delete = mysqli_query($conn, "DELETE FROM keranjang");
-    if (!$delete) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => mysqli_error($conn)
-        ]);
-        exit;
-    }
+
+    // Clear session cart
+    $_SESSION['cart'] = [];
 
     // tambahkan data ke table 'laporan'
     $catatan = $data['catatan'] ?? '';
@@ -73,24 +79,8 @@ if (isset($_GET['q']) && $_GET['q'] === 'save_transaction') {
 if (isset($_GET['q']) && $_GET['q'] === 'reset_cart') {
     header('Content-Type: application/json');
 
-    // cek stock produk di keranjang dan balikin ke tabel produk
-    $cartcheck = mysqli_query($conn, "SELECT idproduk, quantity FROM keranjang");
-    while ($cartitem = mysqli_fetch_assoc($cartcheck)) {
-        $idproduk = (int)$cartitem['idproduk'];
-        $qty      = (int)$cartitem['quantity'];
-
-        $update = mysqli_query($conn, "UPDATE produk SET stock = stock + $qty WHERE idproduk = '$idproduk'");
-    }
-
-    $delete = mysqli_query($conn, "DELETE FROM keranjang");
-
-    if (!$delete) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => mysqli_error($conn)
-        ]);
-        exit;
-    }
+    // Clear session cart (stock tidak perlu dikembalikan karena belum dikurangi)
+    $_SESSION['cart'] = [];
 
     echo json_encode([
         'status' => 'success'
@@ -98,14 +88,33 @@ if (isset($_GET['q']) && $_GET['q'] === 'reset_cart') {
     exit;
 }
 
-if (isset($_GET['q']) && $_GET['q'] === 'add_to_cart') {
-
-    
+// Endpoint untuk get cart data
+if (isset($_GET['q']) && $_GET['q'] === 'get_cart') {
     header('Content-Type: application/json');
-    
+
+    $cart_items = $_SESSION['cart'] ?? [];
+    $items = [];
+    $total = 0;
+
+    foreach ($cart_items as $item) {
+        $items[] = $item;
+        $total += $item['harga_jual'] * $item['quantity'];
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'items' => $items,
+        'total' => $total
+    ]);
+    exit;
+}
+
+if (isset($_GET['q']) && $_GET['q'] === 'add_to_cart') {
+    header('Content-Type: application/json');
+
     $raw = file_get_contents("php://input");
     $data = json_decode($raw, true);
-    
+
     if (!is_array($data)) {
         echo json_encode([
             'status' => 'error',
@@ -113,10 +122,13 @@ if (isset($_GET['q']) && $_GET['q'] === 'add_to_cart') {
         ]);
         exit;
     }
-    
+
     $idproduk = (int)($data['idproduk'] ?? 0);
-    $qty      = (int)($data['qty'] ?? 0);
-    
+    $kode_produk = $data['kode_produk'] ?? '';
+    $nama_produk = $data['nama_produk'] ?? '';
+    $harga = (float)($data['harga'] ?? 0);
+    $qty = (int)($data['qty'] ?? 0);
+
     if ($idproduk <= 0 || $qty <= 0) {
         echo json_encode([
             'status' => 'error',
@@ -125,34 +137,52 @@ if (isset($_GET['q']) && $_GET['q'] === 'add_to_cart') {
         exit;
     }
 
-    // cek stock produk
+    // Cek stock produk
     $stockcheck = mysqli_query($conn, "SELECT stock FROM produk WHERE idproduk = '$idproduk'");
     $stockdata = mysqli_fetch_assoc($stockcheck);
-    if (!$stockdata || $stockdata['stock'] < $qty) {
+
+    // Hitung total qty yang sudah ada di cart
+    $cart_qty = 0;
+    if (isset($_SESSION['cart'][$idproduk])) {
+        $cart_qty = $_SESSION['cart'][$idproduk]['quantity'];
+    }
+
+    if (!$stockdata || $stockdata['stock'] < ($cart_qty + $qty)) {
         echo json_encode([
             'status' => 'error',
             'message' => 'Stok tidak mencukupi'
         ]);
         exit;
     }
-    
-    $insert = mysqli_query($conn, "INSERT INTO keranjang (idproduk,quantity) VALUES ('$idproduk','$qty')");
 
-    if (!$insert) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => mysqli_error($conn)
-        ]);
-        exit;
+    // Tambah atau update cart di session
+    if (isset($_SESSION['cart'][$idproduk])) {
+        $_SESSION['cart'][$idproduk]['quantity'] += $qty;
+    } else {
+        $_SESSION['cart'][$idproduk] = [
+            'idproduk' => $idproduk,
+            'kode_produk' => $kode_produk,
+            'nama_produk' => $nama_produk,
+            'harga_jual' => $harga,
+            'quantity' => $qty
+        ];
     }
 
-    // update dan kurangin quantity di tabel produk
-    $update = mysqli_query($conn, "UPDATE produk SET stock = stock - $qty WHERE idproduk = '$idproduk'");
+    // Calculate total
+    $total = 0;
+    foreach ($_SESSION['cart'] as $item) {
+        $total += $item['harga_jual'] * $item['quantity'];
+    }
+
+    $cart_count = count($_SESSION['cart']);
 
     echo json_encode([
         'status'   => 'success',
         'idproduk' => $idproduk,
-        'qty'      => $qty
+        'qty'      => $qty,
+        'cart_item' => $_SESSION['cart'][$idproduk],
+        'cart_count' => $cart_count,
+        'total' => $total
     ]);
     exit;
 }
@@ -160,10 +190,10 @@ if (isset($_GET['q']) && $_GET['q'] === 'add_to_cart') {
 // Handler untuk hapus item dari keranjang
 if (isset($_GET['q']) && $_GET['q'] === 'delete_cart_item') {
     header('Content-Type: application/json');
-    
+
     $raw = file_get_contents("php://input");
     $data = json_decode($raw, true);
-    
+
     if (!is_array($data)) {
         echo json_encode([
             'status' => 'error',
@@ -171,53 +201,33 @@ if (isset($_GET['q']) && $_GET['q'] === 'delete_cart_item') {
         ]);
         exit;
     }
-    
-    $idcart = (int)($data['idcart'] ?? 0);
-    
-    if ($idcart <= 0) {
+
+    $idproduk = (int)($data['idproduk'] ?? 0);
+
+    if ($idproduk <= 0) {
         echo json_encode([
             'status' => 'error',
-            'message' => 'ID cart tidak valid'
+            'message' => 'ID produk tidak valid'
         ]);
         exit;
     }
-    
-    // Ambil data item sebelum dihapus untuk kembalikan stock
-    $cartItem = mysqli_query($conn, "SELECT idproduk, quantity FROM keranjang WHERE idcart = '$idcart'");
-    $item = mysqli_fetch_assoc($cartItem);
-    
-    if (!$item) {
+
+    // Hapus dari session
+    if (isset($_SESSION['cart'][$idproduk])) {
+        unset($_SESSION['cart'][$idproduk]);
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Item berhasil dihapus'
+        ]);
+    } else {
         echo json_encode([
             'status' => 'error',
             'message' => 'Item tidak ditemukan'
         ]);
-        exit;
     }
-    
-    $idproduk = (int)$item['idproduk'];
-    $qty = (int)$item['quantity'];
-    
-    // Hapus item dari keranjang
-    $delete = mysqli_query($conn, "DELETE FROM keranjang WHERE idcart = '$idcart'");
-    
-    if (!$delete) {
-        echo json_encode([
-            'status' => 'error',
-            'message' => mysqli_error($conn)
-        ]);
-        exit;
-    }
-    
-    // Kembalikan stock ke produk
-    $update = mysqli_query($conn, "UPDATE produk SET stock = stock + $qty WHERE idproduk = '$idproduk'");
-    
-    echo json_encode([
-        'status' => 'success',
-        'message' => 'Item berhasil dihapus'
-    ]);
     exit;
 }
-
 
 if (isset($_GET['q'])) {
     $q = trim($_GET['q']);
@@ -231,24 +241,23 @@ if (isset($_GET['q'])) {
         $conn,
         "SELECT idproduk, kode_produk, nama_produk AS nama, harga_jual, stock
          FROM produk
-         WHERE kode_produk LIKE ?
+         WHERE kode_produk LIKE ? OR nama_produk LIKE ?
          LIMIT 10"
     );
 
     $search = "%$q%";
-    mysqli_stmt_bind_param($stmt, "s", $search);
+    mysqli_stmt_bind_param($stmt, "ss", $search, $search);
     mysqli_stmt_execute($stmt);
 
     $result = mysqli_stmt_get_result($stmt);
 
     $data = [];
     while ($row = mysqli_fetch_assoc($result)) {
-        // $data[] = $row;
         $data[] = [
             'idproduk' => $row['idproduk'],
             'kode_produk' => $row['kode_produk'],
             'nama' => $row['nama'],
-            'harga_jual' => formatRupiah($row['harga_jual'], false),
+            'harga_jual' => (float)$row['harga_jual'], // Kirim sebagai number, bukan string
             'stock' => (int)$row['stock'],
         ];
     }

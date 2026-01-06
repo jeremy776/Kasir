@@ -20,6 +20,9 @@ if (isset($_POST['username'], $_POST['password'])) {
     $result = mysqli_stmt_get_result($stmt);
     $user = mysqli_fetch_assoc($result);
 
+    $hash = password_hash('admin', PASSWORD_DEFAULT);
+    var_dump($hash);
+
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['login'] = true;
         $_SESSION['username'] = $user['username'];
@@ -27,10 +30,10 @@ if (isset($_POST['username'], $_POST['password'])) {
         $_SESSION['alamat'] = $user['alamat'];
         $_SESSION['telepon'] = $user['telepon'];
 
-        header("Location: ../index.php");
+        header("Location: index.php");
         exit;
     } else {
-        header("Location: ../login.php?error=1");
+        header("Location: login.php?error=1");
         exit;
     }
 }
@@ -39,26 +42,26 @@ if (isset($_POST['username'], $_POST['password'])) {
 <div id="id">
     <section class="flex min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
         <div class="flex flex-col w-full items-center justify-center px-4 sm:px-6 py-6 sm:py-8 mx-auto">
-            
+
             <div class="w-full bg-white rounded-2xl shadow-xl border border-gray-100 sm:max-w-md overflow-hidden">
-                
+
                 <div class="p-5 sm:p-8">
                     <div class="text-center mb-5 sm:mb-6">
                         <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Selamat Datang</h2>
                         <p class="text-xs sm:text-sm text-gray-500 mt-1">Silakan masuk ke akun Anda</p>
                     </div>
-                    
+
                     <?php if (isset($_GET['error'])): ?>
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p class="text-sm text-red-600 flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Username atau password salah!
-                        </p>
-                    </div>
+                        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-sm text-red-600 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                Username atau password salah!
+                            </p>
+                        </div>
                     <?php endif; ?>
-                    
+
                     <form method="POST" class="space-y-5" action="">
                         <div>
                             <label for="username" class="block mb-2 text-sm font-medium text-gray-700">Username</label>
@@ -90,7 +93,7 @@ if (isset($_POST['username'], $_POST['password'])) {
                         </button>
                     </form>
                 </div>
-                
+
                 <div class="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
                     <p class="text-xs text-gray-500">© <?php echo date('Y'); ?> LazyPeople. All rights reserved.</p>
                 </div>

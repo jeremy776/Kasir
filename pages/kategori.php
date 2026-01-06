@@ -53,7 +53,7 @@ $total_pages = ceil($total_kategori / $limit);
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Desktop Table -->
                     <div class="hidden md:block overflow-hidden">
                         <table class="min-w-full divide-y divide-gray-200 ">
@@ -75,12 +75,12 @@ $total_pages = ceil($total_kategori / $limit);
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800"><?php echo $kategori['nama_kategori']; ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 "><?php
-                                            $idkategori = (int)$kategori['idkategori'];
-                                            $count_produk = mysqli_query($conn, "SELECT COUNT(*) as total FROM produk WHERE idkategori = $idkategori");
-                                            $count_produk_row = mysqli_fetch_assoc($count_produk);
-                                            echo (int)$count_produk_row['total'];
+                                                                                                        $idkategori = (int)$kategori['idkategori'];
+                                                                                                        $count_produk = mysqli_query($conn, "SELECT COUNT(*) as total FROM produk WHERE idkategori = $idkategori");
+                                                                                                        $count_produk_row = mysqli_fetch_assoc($count_produk);
+                                                                                                        echo (int)$count_produk_row['total'];
 
-                                        ?></td>
+                                                                                                        ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap space-x-4 text-end text-sm font-medium">
                                             <button type="button" onclick="hapus(this)" id="<?php echo $kategori['idkategori']; ?>" class="inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-transparent text-red-600 hover:text-red-800 focus:outline-hidden focus:text-red-800 disabled:opacity-50 disabled:pointer-events-none">Hapus</button>
                                         </td>
@@ -90,10 +90,10 @@ $total_pages = ceil($total_kategori / $limit);
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <!-- Mobile Card List -->
                     <div class="md:hidden divide-y divide-gray-200">
-                        <?php 
+                        <?php
                         mysqli_data_seek($list_kategori, 0);
                         while ($kategori = mysqli_fetch_assoc($list_kategori)) : ?>
                             <div class="p-4 flex items-center justify-between">
@@ -101,10 +101,10 @@ $total_pages = ceil($total_kategori / $limit);
                                     <p class="text-sm font-medium text-gray-800"><?php echo $kategori['nama_kategori']; ?></p>
                                     <p class="text-xs text-gray-500">
                                         <?php
-                                            $idkategori = (int)$kategori['idkategori'];
-                                            $count_produk = mysqli_query($conn, "SELECT COUNT(*) as total FROM produk WHERE idkategori = $idkategori");
-                                            $count_produk_row = mysqli_fetch_assoc($count_produk);
-                                            echo (int)$count_produk_row['total'];
+                                        $idkategori = (int)$kategori['idkategori'];
+                                        $count_produk = mysqli_query($conn, "SELECT COUNT(*) as total FROM produk WHERE idkategori = $idkategori");
+                                        $count_produk_row = mysqli_fetch_assoc($count_produk);
+                                        echo (int)$count_produk_row['total'];
                                         ?> produk
                                     </p>
                                 </div>
@@ -116,21 +116,21 @@ $total_pages = ceil($total_kategori / $limit);
                     <div class="p-3 sm:p-0 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <h4 class="px-2 sm:px-5 py-2 text-xs sm:text-sm text-gray-500">Page <?php echo $page; ?> of <?php echo $total_pages ?: 1; ?> (<?php echo $total_kategori; ?> data)</h4>
                         <div class="px-2 sm:px-5 py-2 flex flex-wrap items-center gap-1">
-                            <?php 
+                            <?php
                             $search_param = !empty($search) ? '&search=' . urlencode($search) : '';
                             if ($page > 1) : ?>
                                 <a href="kategori.php?page=<?php echo $page - 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">«</a>
                             <?php endif; ?>
-                            
-                            <?php 
+
+                            <?php
                             $start_page = max(1, $page - 2);
                             $end_page = min($total_pages, $page + 2);
-                            
+
                             if ($start_page > 1) : ?>
                                 <a href="kategori.php?page=1<?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">1</a>
                                 <?php if ($start_page > 2) : ?><span class="px-2 text-gray-500">...</span><?php endif; ?>
                             <?php endif; ?>
-                            
+
                             <?php for ($i = $start_page; $i <= $end_page; $i++) : ?>
                                 <?php if ($i === $page) : ?>
                                     <span class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg"><?php echo $i; ?></span>
@@ -138,12 +138,12 @@ $total_pages = ceil($total_kategori / $limit);
                                     <a href="kategori.php?page=<?php echo $i; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"><?php echo $i; ?></a>
                                 <?php endif; ?>
                             <?php endfor; ?>
-                            
+
                             <?php if ($end_page < $total_pages) : ?>
                                 <?php if ($end_page < $total_pages - 1) : ?><span class="px-2 text-gray-500">...</span><?php endif; ?>
                                 <a href="kategori.php?page=<?php echo $total_pages; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"><?php echo $total_pages; ?></a>
                             <?php endif; ?>
-                            
+
                             <?php if ($page < $total_pages) : ?>
                                 <a href="kategori.php?page=<?php echo $page + 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">»</a>
                             <?php endif; ?>
@@ -158,7 +158,6 @@ $total_pages = ceil($total_kategori / $limit);
 </div>
 
 <script>
-
     function hapus(btn) {
         const idkategori = btn.id;
 
@@ -181,11 +180,23 @@ $total_pages = ceil($total_kategori / $limit);
             })
             .then(data => {
                 if (data.status === 'error') {
-                    alert(data.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: data.message,
+                        confirmButtonColor: '#dc2626'
+                    });
                     return;
                 }
-                alert('Kategori berhasil dihapus');
-                window.location.reload();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Terhapus!',
+                    text: 'Kategori berhasil dihapus',
+                    confirmButtonColor: '#2563eb',
+                    timer: 1500
+                }).then(() => {
+                    window.location.reload();
+                });
             })
             .catch(err => {
                 console.error('ERROR:', err);
@@ -210,11 +221,23 @@ $total_pages = ceil($total_kategori / $limit);
             })
             .then(data => {
                 if (data.status === 'error') {
-                    alert(data.message);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: data.message,
+                        confirmButtonColor: '#dc2626'
+                    });
                     return;
                 }
-                alert('Kategori berhasil ditambahkan');
-                window.location.reload();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Kategori berhasil ditambahkan',
+                    confirmButtonColor: '#2563eb',
+                    timer: 1500
+                }).then(() => {
+                    window.location.reload();
+                });
             })
             .catch(err => {
                 console.error('ERROR:', err);

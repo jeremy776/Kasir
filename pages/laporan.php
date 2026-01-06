@@ -27,7 +27,7 @@ $total_transaksi = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(idlapora
 $total_penjualan = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(totalbeli) as total FROM laporan"))['total'] ?? 0;
 
 // Hitung keuntungan (pendapatan - modal)
-$data_keuntungan = mysqli_query($conn, "SELECT SUM(p.harga_jual * t.quantity) as pendapatan, SUM(p.harga_modal * t.quantity) as modal FROM tb_nota t JOIN produk p ON p.idproduk = t.idproduk");
+$data_keuntungan = mysqli_query($conn, "SELECT SUM(t.harga_jual * t.quantity) as pendapatan, SUM(p.harga_modal * t.quantity) as modal FROM tb_nota t JOIN produk p ON p.idproduk = t.idproduk");
 $row_keuntungan = mysqli_fetch_assoc($data_keuntungan);
 $pendapatan = $row_keuntungan['pendapatan'] ?? 0;
 $modal = $row_keuntungan['modal'] ?? 0;
@@ -150,16 +150,20 @@ $total_pages = ceil($total_laporan / $limit);
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pembayaran</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kembalian</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Keuntungan</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    <?php 
+                    <?php
                     $no = 1;
-                    while ($laporan = mysqli_fetch_assoc($list_laporan)): 
+                    while ($laporan = mysqli_fetch_assoc($list_laporan)):
                         $nota = $laporan['no_nota'];
-                        $qty_result = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(quantity) as qty FROM tb_nota WHERE no_nota='$nota'"));
+                        $qty_result = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(quantity) as qty, SUM(harga_jual * quantity) as subtotal FROM tb_nota WHERE no_nota='$nota'"));
                         $qty = $qty_result['qty'] ?? 0;
+                        $subtotal = $qty_result['subtotal'] ?? 0;
+
+                        $keuntungan = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM((t.harga_jual - p.harga_modal) * t.quantity) as keuntungan FROM tb_nota t JOIN produk p ON p.idproduk = t.idproduk WHERE t.no_nota='$nota'"))['keuntungan'] ?? 0;
                     ?>
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 text-sm text-gray-600"><?php echo $no++ + $offset; ?></td>
@@ -167,16 +171,16 @@ $total_pages = ceil($total_laporan / $limit);
                             <td class="px-4 py-3 text-sm text-gray-600"><?php echo $laporan['tgl_sub'] ?? '-'; ?></td>
                             <td class="px-4 py-3 text-sm text-gray-600"><?php echo $qty; ?> item</td>
                             <td class="px-4 py-3 text-sm text-gray-600 max-w-[150px] truncate"><?php echo $laporan['catatan'] ?: '-'; ?></td>
-                            <td class="px-4 py-3 text-sm font-medium text-gray-800"><?php echo formatRupiah($laporan['totalbeli']); ?></td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-800"><?php echo formatRupiah($subtotal); ?></td>
                             <td class="px-4 py-3 text-sm text-gray-600"><?php echo formatRupiah($laporan['pembayaran']); ?></td>
                             <td class="px-4 py-3 text-sm text-gray-600"><?php echo formatRupiah($laporan['kembalian']); ?></td>
+                            <td class="px-4 py-3 text-sm text-gray-600"><?php echo formatRupiah($keuntungan); ?></td>
                             <td class="px-4 py-3 text-sm text-right space-x-2">
                                 <button onclick="viewDetail('<?php echo $nota; ?>')" class="text-blue-600 hover:text-blue-800 font-medium">Detail</button>
-                                <button onclick="hapusLaporan('<?php echo $nota; ?>')" class="text-red-600 hover:text-red-800 font-medium">Hapus</button>
                             </td>
                         </tr>
                     <?php endwhile; ?>
-                    
+
                     <?php if ($total_laporan === 0): ?>
                         <tr>
                             <td colspan="9" class="px-4 py-8 text-center text-gray-500">
@@ -190,15 +194,16 @@ $total_pages = ceil($total_laporan / $limit);
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Mobile Card List -->
         <div class="md:hidden divide-y divide-gray-200">
-            <?php 
+            <?php
             mysqli_data_seek($list_laporan, 0);
-            while ($laporan = mysqli_fetch_assoc($list_laporan)): 
+            while ($laporan = mysqli_fetch_assoc($list_laporan)):
                 $nota = $laporan['no_nota'];
-                $qty_result = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(quantity) as qty FROM tb_nota WHERE no_nota='$nota'"));
+                $qty_result = mysqli_fetch_assoc(mysqli_query($conn, "SELECT SUM(quantity) as qty, SUM(harga_jual * quantity) as subtotal FROM tb_nota WHERE no_nota='$nota'"));
                 $qty = $qty_result['qty'] ?? 0;
+                $subtotal = $qty_result['subtotal'] ?? 0;
             ?>
                 <div class="p-4 space-y-3">
                     <div class="flex justify-between items-start">
@@ -211,7 +216,7 @@ $total_pages = ceil($total_laporan / $limit);
                     <div class="grid grid-cols-3 gap-2 text-xs">
                         <div>
                             <p class="text-gray-400">Total</p>
-                            <p class="font-semibold text-gray-800"><?php echo formatRupiah($laporan['totalbeli']); ?></p>
+                            <p class="font-semibold text-gray-800"><?php echo formatRupiah($subtotal); ?></p>
                         </div>
                         <div>
                             <p class="text-gray-400">Bayar</p>
@@ -227,11 +232,10 @@ $total_pages = ceil($total_laporan / $limit);
                     <?php endif; ?>
                     <div class="flex gap-3 pt-2 border-t border-gray-100">
                         <button onclick="viewDetail('<?php echo $nota; ?>')" class="text-xs font-semibold text-blue-600 hover:text-blue-800">Detail</button>
-                        <button onclick="hapusLaporan('<?php echo $nota; ?>')" class="text-xs font-semibold text-red-600 hover:text-red-800">Hapus</button>
                     </div>
                 </div>
             <?php endwhile; ?>
-            
+
             <?php if ($total_laporan === 0): ?>
                 <div class="p-8 text-center text-gray-500">
                     <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,16 +250,16 @@ $total_pages = ceil($total_laporan / $limit);
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 md:p-4 border-t border-gray-100">
             <p class="text-xs sm:text-sm text-gray-500">Page <?php echo $page; ?> of <?php echo $total_pages ?: 1; ?> (<?php echo $total_laporan; ?> data)</p>
             <div class="flex flex-wrap items-center gap-1">
-                <?php 
+                <?php
                 $search_param = !empty($search) ? '&search=' . urlencode($search) : '';
                 if ($page > 1) : ?>
                     <a href="laporan.php?page=<?php echo $page - 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">«</a>
                 <?php endif; ?>
-                
-                <?php 
+
+                <?php
                 $start_page = max(1, $page - 2);
                 $end_page = min($total_pages, $page + 2);
-                
+
                 for ($i = $start_page; $i <= $end_page; $i++) : ?>
                     <?php if ($i === $page) : ?>
                         <span class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg"><?php echo $i; ?></span>
@@ -263,7 +267,7 @@ $total_pages = ceil($total_laporan / $limit);
                         <a href="laporan.php?page=<?php echo $i; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"><?php echo $i; ?></a>
                     <?php endif; ?>
                 <?php endfor; ?>
-                
+
                 <?php if ($page < $total_pages) : ?>
                     <a href="laporan.php?page=<?php echo $page + 1; ?><?php echo $search_param; ?>" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">»</a>
                 <?php endif; ?>
@@ -273,41 +277,29 @@ $total_pages = ceil($total_laporan / $limit);
 </div>
 
 <script>
-    function hapusLaporan(nota) {
-        if (!confirm('Yakin ingin menghapus laporan ' + nota + '?')) {
-            return;
-        }
-        fetch('laporan.php?q=hapus', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ no_nota: nota })
-        }).then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                alert('Laporan berhasil dihapus');
-                location.reload();
-            } else {
-                alert('Gagal menghapus: ' + data.message);
-            }
-        }).catch(err => {
-            console.error(err);
-            alert('Terjadi kesalahan');
-        });
-    }
-
     function viewDetail(nota) {
         fetch('laporan.php?q=detail&nota=' + encodeURIComponent(nota))
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                showDetailModal(data.data);
-            } else {
-                alert('Gagal memuat detail: ' + data.message);
-            }
-        }).catch(err => {
-            console.error(err);
-            alert('Terjadi kesalahan');
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showDetailModal(data.data);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Gagal memuat detail: ' + data.message,
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            }).catch(err => {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan',
+                    confirmButtonColor: '#dc2626'
+                });
+            });
     }
 
     function showDetailModal(data) {
@@ -323,9 +315,11 @@ $total_pages = ceil($total_laporan / $limit);
         // Build items table
         let itemsHtml = '';
         let totalQty = 0;
+        let totalSubtotal = 0;
         items.forEach((item, index) => {
             const subtotal = item.harga_jual * item.quantity;
             totalQty += parseInt(item.quantity);
+            totalSubtotal += subtotal;
             itemsHtml += `
                 <tr>
                     <td class="py-1 text-sm text-gray-800">${item.nama_produk}</td>
@@ -338,7 +332,7 @@ $total_pages = ceil($total_laporan / $limit);
 
         // Set summary
         document.getElementById('detail_total_qty').textContent = totalQty + ' item';
-        document.getElementById('detail_subtotal').textContent = formatRupiah(laporan.totalbeli);
+        document.getElementById('detail_subtotal').textContent = formatRupiah(totalSubtotal);
         document.getElementById('detail_pembayaran').textContent = formatRupiah(laporan.pembayaran);
         document.getElementById('detail_kembalian').textContent = formatRupiah(laporan.kembalian);
 
@@ -416,7 +410,7 @@ $total_pages = ceil($total_laporan / $limit);
 <div id="modalDetail" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4 py-8">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="closeDetailModal()"></div>
-        
+
         <div class="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden">
             <!-- Print Area -->
             <div id="printArea">
